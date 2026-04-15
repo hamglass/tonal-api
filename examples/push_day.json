@@ -1,0 +1,47 @@
+{
+  "title": "Push Day - Chest & Shoulders",
+  "blocks": [
+    {
+      "_comment": "Block 1: Compound superset — Bench Press + Standing Overhead Press",
+      "exercises": [
+        {
+          "movement_id": "c9afad76-751b-4f7a-99b7-6b5dc09d3901",
+          "sets": 3,
+          "reps": 10,
+          "spotter": true
+        },
+        {
+          "movement_id": "15e61478-bbe3-41dc-a45c-7dd857bb8968",
+          "sets": 3,
+          "reps": 10
+        }
+      ]
+    },
+    {
+      "_comment": "Block 2: Incline + Lateral Raise superset",
+      "exercises": [
+        {
+          "movement_id": "5d0936a8-2d9f-46f3-8d42-8e39a8781198",
+          "sets": 3,
+          "reps": 12
+        },
+        {
+          "movement_id": "7dad8063-0eba-4cf7-bcd8-9c12e9515be0",
+          "sets": 3,
+          "reps": 15
+        }
+      ]
+    },
+    {
+      "_comment": "Block 3: Triceps isolation — Triceps Extension (rope)",
+      "exercises": [
+        {
+          "movement_id": "8571813d-b302-4cbe-a3b5-cc805a046b7d",
+          "sets": 3,
+          "reps": 12,
+          "eccentric": true
+        }
+      ]
+    }
+  ]
+}

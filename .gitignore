@@ -1,0 +1,25 @@
+# Credentials & tokens
+tokens.json
+pending_auth.json
+pkce_state.json
+.env
+
+# Caches
+movements_cache.json
+refresh_status.json
+refresh.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
