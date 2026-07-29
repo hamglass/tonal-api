@@ -89,6 +89,7 @@ python3 tonal_tool.py create-workout examples/push_day.json
 | Command | Description |
 |---|---|
 | `movements [search]` | Search exercise catalog by name, muscle, body region, or accessory |
+| `programs [search] [level=X] [max_weeks=N] [per_week=N]` | Search the multi-week program catalog (300+) by text, level, length, or weekly frequency |
 | `create-workout <json>` | Build & push workout to Tonal |
 | `estimate <json>` | Estimate workout duration |
 | `delete-workout <id>` | Delete a custom workout |
@@ -194,6 +195,7 @@ Add to your Claude Code `settings.json`, Cursor config, or any MCP client:
 | `get_performance_summary` | Formatted summary with L/R splits |
 | `get_exercise_history` | Progressive overload tracking across sessions |
 | `search_exercises` | Exercise catalog search |
+| `search_programs` | Multi-week program catalog search (text, level, weeks, frequency) |
 | `create_workout` | Build & push workout to Tonal |
 | `estimate_duration` | Predict workout duration |
 | `delete_workout` | Remove custom workout |

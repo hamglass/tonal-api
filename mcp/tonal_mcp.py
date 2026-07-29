@@ -45,6 +45,7 @@ except ImportError:
 TOKEN_DIR = os.environ.get("TONAL_TOKEN_DIR", os.path.dirname(os.path.abspath(__file__)))
 TOKEN_FILE = os.path.join(TOKEN_DIR, "tokens.json")
 MOVEMENTS_CACHE = os.path.join(TOKEN_DIR, "movements_cache.json")
+PROGRAMS_CACHE = os.path.join(TOKEN_DIR, "programs_cache.json")
 TONAL_API_BASE = "https://api.tonal.com"
 AUTH0_DOMAIN = "tonal.auth0.com"
 AUTH0_CLIENT_ID = "ERCyexW-xoVG_Yy3RDe-eV4xsOnRHP6L"
@@ -338,6 +339,47 @@ def search_exercises(query: str) -> dict:
          "spotter_ok": not (m.get("onMachineInfo") or {}).get("spotterDisabled", True),
          "eccentric_ok": not (m.get("onMachineInfo") or {}).get("eccentricDisabled", True)}
         for m in matches[:50]]}
+
+
+def _program_catalog():
+    if os.path.exists(PROGRAMS_CACHE):
+        with open(PROGRAMS_CACHE) as f:
+            cache = json.load(f)
+        if time.time() - cache.get("cached_at", 0) < 86400:
+            return cache.get("programs", [])
+    data = _api_get("/v6/programs")
+    programs = data if isinstance(data, list) else data.get("programs", [])
+    with open(PROGRAMS_CACHE, "w") as f:
+        json.dump({"cached_at": time.time(), "count": len(programs), "programs": programs}, f)
+    return programs
+
+
+@mcp.tool()
+def search_programs(query: str = "", level: str = "", max_weeks: int = 0, max_per_week: int = 0) -> dict:
+    """Search Tonal's multi-week program catalog (300+ guided programs).
+
+    query: free text matched against program name and description (e.g. "hypertrophy", "upper body").
+    level: BEGINNER, INTERMEDIATE, or ADVANCED (programs marked ALL always match).
+    max_weeks: only programs this many weeks or shorter (0 = no limit).
+    max_per_week: only programs with at most this many workouts per week (0 = no limit).
+    Returns program id, name, weeks, workouts_per_week, level, accessories, and description."""
+    matches = [p for p in _program_catalog() if p.get("publishState", "published") == "published"]
+    if level:
+        matches = [p for p in matches if p.get("level", "").upper() in (level.upper(), "ALL")]
+    if max_weeks:
+        matches = [p for p in matches if (p.get("weeks") or 0) <= max_weeks]
+    if max_per_week:
+        matches = [p for p in matches if (p.get("workoutsPerWeek") or 0) <= max_per_week]
+    if query:
+        q = query.lower()
+        matches = [p for p in matches
+                   if q in p.get("name", "").lower() or q in (p.get("description") or "").lower()]
+    return {"total": len(matches), "programs": [
+        {"id": p.get("id"), "name": p.get("name"), "weeks": p.get("weeks"),
+         "workouts_per_week": p.get("workoutsPerWeek"), "level": p.get("level"),
+         "accessories": p.get("accessories", []),
+         "description": (p.get("description") or "")[:400]}
+        for p in matches[:50]]}
 
 
 @mcp.tool()

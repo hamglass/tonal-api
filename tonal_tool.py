@@ -50,6 +50,7 @@ from urllib.parse import quote
 TOOL_DIR = os.environ.get("TONAL_TOKEN_DIR", os.path.dirname(os.path.abspath(__file__)))
 TOKEN_FILE = os.path.join(TOOL_DIR, "tokens.json")
 MOVEMENTS_CACHE = os.path.join(TOOL_DIR, "movements_cache.json")
+PROGRAMS_CACHE = os.path.join(TOOL_DIR, "programs_cache.json")
 
 # Tonal API
 TONAL_API_BASE = "https://api.tonal.com"
@@ -238,6 +239,31 @@ def _sync_movements():
     except Exception:
         pass
     return movements
+
+def _load_program_cache():
+    if not os.path.exists(PROGRAMS_CACHE):
+        return None
+    try:
+        with open(PROGRAMS_CACHE) as f:
+            cache = json.load(f)
+        if time.time() - cache.get("cached_at", 0) > 86400:
+            return None
+        return cache.get("programs", [])
+    except Exception:
+        return None
+
+def _sync_programs():
+    data = api_get("/v6/programs")
+    if isinstance(data, dict) and "error" in data:
+        return data
+    programs = data if isinstance(data, list) else data.get("programs", data.get("data", []))
+    cache = {"cached_at": time.time(), "count": len(programs), "programs": programs}
+    try:
+        with open(PROGRAMS_CACHE, "w") as f:
+            json.dump(cache, f)
+    except Exception:
+        pass
+    return programs
 
 def _get_movement_map():
     """Return dict of movement_id -> movement data."""
@@ -814,6 +840,55 @@ def cmd_movements(args):
     }
 
 
+# ── Program Catalog ───────────────────────────────────────────────────
+
+def _program_summary(p):
+    return {
+        "id": p.get("id"), "name": p.get("name"),
+        "weeks": p.get("weeks"), "workouts_per_week": p.get("workoutsPerWeek"),
+        "level": p.get("level"),
+        "accessories": p.get("accessories", []),
+        "description": (p.get("description") or "")[:400],
+    }
+
+def cmd_programs(args):
+    """programs [search terms] [level=X] [max_weeks=N] [per_week=N]"""
+    catalog = _load_program_cache()
+    if not catalog:
+        catalog = _sync_programs()
+        if isinstance(catalog, dict) and "error" in catalog:
+            return catalog
+
+    level = max_weeks = per_week = None
+    terms = []
+    for a in args:
+        if a.lower().startswith("level="):
+            level = a.split("=", 1)[1].upper()
+        elif a.lower().startswith("max_weeks="):
+            max_weeks = int(a.split("=", 1)[1])
+        elif a.lower().startswith("per_week="):
+            per_week = int(a.split("=", 1)[1])
+        else:
+            terms.append(a.lower())
+    search = " ".join(terms) if terms else None
+
+    matches = [p for p in catalog if p.get("publishState", "published") == "published"]
+    if level:
+        matches = [p for p in matches if p.get("level", "").upper() in (level, "ALL")]
+    if max_weeks:
+        matches = [p for p in matches if (p.get("weeks") or 0) <= max_weeks]
+    if per_week:
+        matches = [p for p in matches if (p.get("workoutsPerWeek") or 0) <= per_week]
+    if search:
+        matches = [p for p in matches
+                   if search in p.get("name", "").lower()
+                   or search in (p.get("description") or "").lower()]
+
+    limit = 50 if len(matches) > 50 else len(matches)
+    return {"total_matches": len(matches), "showing": limit,
+            "programs": [_program_summary(p) for p in matches[:limit]]}
+
+
 # ── Workout Creation ──────────────────────────────────────────────────
 
 def _expand_blocks(blocks, movement_map):
@@ -1019,6 +1094,7 @@ COMMANDS = {
     "exercise-history": cmd_exercise_history,
     "custom-workouts": cmd_custom_workouts,
     "movements": cmd_movements,
+    "programs": cmd_programs,
     "create-workout": cmd_create_workout,
     "estimate": cmd_estimate,
     "delete-workout": cmd_delete_workout,
