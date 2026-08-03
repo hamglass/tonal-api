@@ -3,10 +3,11 @@
 # Refreshes the JWT token and logs results. If refresh fails,
 # writes a failure marker for monitoring.
 
-TOOL_DIR="${TONAL_TOKEN_DIR:-$(dirname "$(readlink -f "$0")")}"
-TOKEN_FILE="$TOOL_DIR/tokens.json"
-STATUS_FILE="$TOOL_DIR/refresh_status.json"
-LOG_FILE="$TOOL_DIR/refresh.log"
+TOOL_DIR="$(dirname "$(readlink -f "$0")")"
+TOKEN_DIR="${TONAL_TOKEN_DIR:-$TOOL_DIR}"
+TOKEN_FILE="$TOKEN_DIR/tokens.json"
+STATUS_FILE="$TOKEN_DIR/refresh_status.json"
+LOG_FILE="$TOKEN_DIR/refresh.log"
 
 # Keep log file manageable (last 200 lines)
 if [ -f "$LOG_FILE" ] && [ "$(wc -l < "$LOG_FILE")" -gt 200 ]; then
